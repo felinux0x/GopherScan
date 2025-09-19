@@ -1,0 +1,5 @@
+host,port,status,service_name,banner,error
+150.10.0.150,80,open,http,HTTP/1.1 200 OK,
+150.10.0.150,443,filtered,,,
+150.10.0.150,22,filtered,,,
+150.10.0.150,8080,filtered,,,
