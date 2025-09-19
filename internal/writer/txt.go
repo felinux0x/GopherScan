@@ -3,6 +3,7 @@ package writer
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/user/pentscan/internal/types"
@@ -22,15 +23,21 @@ const (
 // TXTWriter formata os resultados em texto plano colorido.
 type TXTWriter struct {
 	output io.Writer
+	file   io.Closer
 	logger *zap.Logger
 }
 
 // NewTXTWriter cria um novo writer de texto.
 func NewTXTWriter(output io.Writer, logger *zap.Logger) (*TXTWriter, error) {
-	return &TXTWriter{
+	tw := &TXTWriter{
 		output: output,
 		logger: logger,
-	}, nil
+	}
+	// Se o writer for um arquivo (e não stdout), guardamos a referência para fechá-lo.
+	if f, ok := output.(io.Closer); ok && output != os.Stdout {
+		tw.file = f
+	}
+	return tw, nil
 }
 
 // WriteHeader não faz nada para este formato de TXT.
@@ -80,5 +87,11 @@ func (w *TXTWriter) Write(result types.ScanResult) {
 	fmt.Fprintln(w.output, line)
 }
 
-// Close não faz nada para o formato TXT.
-func (w *TXTWriter) Close() {}
+// Close fecha o arquivo de saída, se ele existir.
+func (w *TXTWriter) Close() {
+	if w.file != nil {
+		if err := w.file.Close(); err != nil {
+			w.logger.Error("Failed to close TXT output file", zap.Error(err))
+		}
+	}
+}

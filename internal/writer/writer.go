@@ -3,7 +3,6 @@ package writer
 import (
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"io"
 	"strconv"
 
@@ -105,66 +104,6 @@ func (cw *CSVWriter) Close() {
 	if cw.file != nil {
 		if err := cw.file.Close(); err != nil {
 			cw.logger.Error("Failed to close output file", zap.Error(err))
-		}
-	}
-}
-
-// ----------------------------------------
-// TXT Writer
-// ----------------------------------------
-
-type TXTWriter struct {
-	writer io.Writer
-	logger *zap.Logger
-	file   io.Closer
-}
-
-func NewTXTWriter(w io.Writer, logger *zap.Logger) (*TXTWriter, error) {
-	tw := &TXTWriter{
-		writer: w,
-		logger: logger,
-	}
-	if f, ok := w.(io.Closer); ok {
-		tw.file = f
-	}
-	return tw, nil
-}
-
-func (tw *TXTWriter) WriteHeader() {
-	header := fmt.Sprintf("% -22s % -8s % -12s %s\n", "HOST:PORT", "STATUS", "SERVICE", "BANNER/ERROR")
-	_, err := tw.writer.Write([]byte(header))
-	if err != nil {
-		tw.logger.Error("Failed to write TXT header", zap.Error(err))
-	}
-}
-
-// Write só imprime portas abertas para manter a saída limpa.
-func (tw *TXTWriter) Write(result types.ScanResult) {
-	if result.Status != types.StatusOpen {
-		return
-	}
-
-	bannerOrError := result.Banner
-	if result.Error != "" {
-		bannerOrError = result.Error
-	}
-
-	line := fmt.Sprintf("% -22s % -8s % -12s %s\n",
-		result.Target.String(),
-		result.Status.String(),
-		result.ServiceName,
-		bannerOrError,
-	)
-
-	if _, err := tw.writer.Write([]byte(line)); err != nil {
-		tw.logger.Error("Failed to write TXT line", zap.Error(err))
-	}
-}
-
-func (tw *TXTWriter) Close() {
-	if tw.file != nil {
-		if err := tw.file.Close(); err != nil {
-			tw.logger.Error("Failed to close output file", zap.Error(err))
 		}
 	}
 }
